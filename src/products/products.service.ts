@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from './interfaces/product.interface';
+import type { Product } from './interfaces/product.interface';
 
 const DATA_FILE = join(process.cwd(), 'data', 'products.json');
 
