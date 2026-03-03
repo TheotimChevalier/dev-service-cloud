@@ -11,7 +11,7 @@ RUN npm install
 # Copier le reste des fichiers de l'application
 COPY . .
 
-# Exposer le port 1234
+# Exposer le port attendu par Cloud Run (et par l'application)
 EXPOSE 8080
 
 # Commande pour démarrer l'application
