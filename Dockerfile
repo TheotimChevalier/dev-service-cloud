@@ -1,18 +1,28 @@
-# Utiliser une image de base Node.js
-FROM node:22
-
-# Définir le répertoire de travail
+# build stage
+FROM node:22-alpine AS builder
 WORKDIR /usr/src/app
 
-# Copier les fichiers de package et installer les dépendances
+# installer les dépendances de build
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copier le reste des fichiers de l'application
+# copier le code et compiler
 COPY . .
+RUN npm run build
 
-# Exposer le port attendu par Cloud Run (et par l'application)
+# production stage
+FROM node:22-alpine
+WORKDIR /usr/src/app
+
+# n'installer que les dépendances de prod
+COPY package*.json ./
+RUN npm ci --only=production
+
+# copier l'application compilée
+COPY --from=builder /usr/src/app/dist ./dist
+
+# exposer le port attendu par Cloud Run et par l'app
 EXPOSE 8080
 
-# Commande pour démarrer l'application
-CMD [ "npm", "run", "start" ]
+# démarrer le serveur Node.js pointant vers le build
+CMD [ "node", "dist/main.js" ]
