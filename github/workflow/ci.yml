@@ -1,0 +1,70 @@
+name: CI / CD
+
+on:
+  push:
+    branches:
+      - develop
+      - 'feature/*'
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+      # (éventuellement `npm run lint` ou `npm run test:cov`)
+
+  deploy:
+    name: Build & deploy to Cloud Run
+    needs: test
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # authentification GCP ; deux options suivantes, choisissez une :
+      # 1. via OIDC (recommandé, pas de secret)
+      - uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_ID_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA }}
+      # 2. ou via clé JSON stockée en secret
+      # - uses: google-github-actions/setup-gcloud@v1
+      #   with:
+      #     service_account_key: ${{ secrets.GCP_SA_KEY }}
+      #     project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Configure gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          export_default_credentials: true
+
+      - name: Build container
+        run: |
+          gcloud builds submit --config=cloudbuild.yaml .
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy cloud-app \
+            --image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/cloud-app \
+            --region=europe-west1 \
+            --platform=managed \
+            --allow-unauthenticated
