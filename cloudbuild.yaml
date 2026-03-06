@@ -44,7 +44,8 @@ images:
   # - 'gcr.io/$PROJECT_ID/cloud-app:$SHORT_SHA'
   - 'gcr.io/$PROJECT_ID/cloud-app:latest'
 
-# options:
+options:
+  logging: CLOUD_LOGGING_ONLY
 #   machineType: 'N1_HIGHCPU_8'
 
 timeout: '1800s'
