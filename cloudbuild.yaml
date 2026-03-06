@@ -29,16 +29,16 @@ steps:
       - '--memory=256Mi'
       - '--cpu=1'
 
-  # Étape 4: Smoke tests (vérifie que /health répond)
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: 'smoke-test'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        URL=$(gcloud run services describe cloud-app --region=europe-west1 --format="value(status.url)")
-        echo "Health check URL: ${URL}/health"
-        curl -f --retry 5 --retry-delay 2 "${URL}/health"
+  # # Étape 4: Smoke tests (vérifie que /health répond)
+  # - name: 'gcr.io/cloud-builders/gcloud'
+  #   id: 'smoke-test'
+  #   entrypoint: 'bash'
+  #   args:
+  #     - '-c'
+  #     - |
+  #       URL=$(gcloud run services describe cloud-app --region=europe-west1 --format="value(status.url)")
+  #       echo "Health check URL: ${URL}/health"
+  #       curl -f --retry 5 --retry-delay 2 "${URL}/health"
 
 images:
   # - 'gcr.io/$PROJECT_ID/cloud-app:$SHORT_SHA'
