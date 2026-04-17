@@ -11,6 +11,16 @@ pipeline {
     }
 
     stages {
+        stage('Validate Inputs') {
+            steps {
+                script {
+                    if (!params.GCP_PROJECT_ID?.trim()) {
+                        error('Missing required parameter: GCP_PROJECT_ID. Set it in Build with Parameters or give a non-empty default value in Jenkinsfile.')
+                    }
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 bat 'docker version'
