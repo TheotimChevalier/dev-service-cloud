@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo 'Pas de SCM, code déjà présent sur l’agent Jenkins.'
+                checkout scm
             }
         }
 
