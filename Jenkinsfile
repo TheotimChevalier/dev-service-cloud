@@ -59,8 +59,8 @@ pipeline {
         stage('Terraform Init & Plan') {
             steps {
                 dir('terraform') {
-                    bat '%TERRAFORM_CMD_EFF% init'
-                    bat '%TERRAFORM_CMD_EFF% plan -var="project_id=%GCP_PROJECT_ID_EFF%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest"'
+                    bat 'set "GOOGLE_APPLICATION_CREDENTIALS=%GCP_SA_KEY%" && %TERRAFORM_CMD_EFF% init'
+                    bat 'set "GOOGLE_APPLICATION_CREDENTIALS=%GCP_SA_KEY%" && %TERRAFORM_CMD_EFF% plan -var="project_id=%GCP_PROJECT_ID_EFF%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest"'
                 }
             }
         }
@@ -68,7 +68,7 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 dir('terraform') {
-                    bat '%TERRAFORM_CMD_EFF% apply -auto-approve -var="project_id=%GCP_PROJECT_ID_EFF%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest"'
+                    bat 'set "GOOGLE_APPLICATION_CREDENTIALS=%GCP_SA_KEY%" && %TERRAFORM_CMD_EFF% apply -auto-approve -var="project_id=%GCP_PROJECT_ID_EFF%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest"'
                 }
             }
         }
