@@ -19,27 +19,35 @@ pipeline {
                     if (!params.GCP_PROJECT_ID?.trim()) {
                         error('Missing required parameter: GCP_PROJECT_ID. Set it in Build with Parameters or give a non-empty default value in Jenkinsfile.')
                     }
+                    if (!params.GCLOUD_PATH?.trim()) {
+                        error('Missing required parameter: GCLOUD_PATH. Provide absolute path to gcloud.cmd.')
+                    }
+
+                    // Map build parameters to environment variables used by bat steps.
+                    env.GCP_PROJECT_ID_EFF = params.GCP_PROJECT_ID.trim()
+                    env.GCLOUD_PATH_EFF = params.GCLOUD_PATH.trim()
+                    env.TERRAFORM_CMD_EFF = (params.TERRAFORM_CMD?.trim()) ? params.TERRAFORM_CMD.trim() : 'terraform'
                 }
-                bat 'if not exist "%GCLOUD_PATH%" (echo gcloud not found at %GCLOUD_PATH% & exit /b 1)'
-                bat '"%GCLOUD_PATH%" --version'
-                bat '%TERRAFORM_CMD% version'
+                bat 'if not exist "%GCLOUD_PATH_EFF%" (echo gcloud not found at %GCLOUD_PATH_EFF% & exit /b 1)'
+                bat '"%GCLOUD_PATH_EFF%" --version'
+                bat '%TERRAFORM_CMD_EFF% version'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 bat 'docker version'
-                bat 'docker build --file Dockerfile --tag "gcr.io/%GCP_PROJECT_ID%/cloud-app:latest" "%WORKSPACE%"'
+                bat 'docker build --file Dockerfile --tag "gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest" "%WORKSPACE%"'
             }
         }
 
 
         stage('Push Docker Image') {
             steps {
-                bat '"%GCLOUD_PATH%" auth activate-service-account --key-file="%GCP_SA_KEY%"'
-                bat '"%GCLOUD_PATH%" config set project "%GCP_PROJECT_ID%"'
-                bat '"%GCLOUD_PATH%" auth configure-docker --quiet'
-                bat 'docker push "gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
+                bat '"%GCLOUD_PATH_EFF%" auth activate-service-account --key-file="%GCP_SA_KEY%"'
+                bat '"%GCLOUD_PATH_EFF%" config set project "%GCP_PROJECT_ID_EFF%"'
+                bat '"%GCLOUD_PATH_EFF%" auth configure-docker --quiet'
+                bat 'docker push "gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest"'
             }
         }
 
@@ -47,8 +55,8 @@ pipeline {
         stage('Terraform Init & Plan') {
             steps {
                 dir('terraform') {
-                    bat '%TERRAFORM_CMD% init'
-                    bat '%TERRAFORM_CMD% plan -var="project_id=%GCP_PROJECT_ID%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
+                    bat '%TERRAFORM_CMD_EFF% init'
+                    bat '%TERRAFORM_CMD_EFF% plan -var="project_id=%GCP_PROJECT_ID_EFF%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest"'
                 }
             }
         }
@@ -56,7 +64,7 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 dir('terraform') {
-                    bat '%TERRAFORM_CMD% apply -auto-approve -var="project_id=%GCP_PROJECT_ID%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
+                    bat '%TERRAFORM_CMD_EFF% apply -auto-approve -var="project_id=%GCP_PROJECT_ID_EFF%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest"'
                 }
             }
         }
