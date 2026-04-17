@@ -3,7 +3,7 @@ pipeline {
 
     parameters {
         string(name: 'GCP_PROJECT_ID', defaultValue: 'test-jenkis', description: 'Google Cloud Project ID (ex: my-project-123456)')
-        string(name: 'GCLOUD_PATH', defaultValue: '', description: 'Optional absolute path to gcloud.cmd on Jenkins agent (leave empty for auto-detection)')
+        string(name: 'GCLOUD_PATH', defaultValue: 'C:\\Users\\thp99\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd', description: 'Absolute path to gcloud.cmd on Jenkins agent')
         string(name: 'TERRAFORM_CMD', defaultValue: 'terraform', description: 'Terraform command or absolute path to terraform.exe')
     }
 
@@ -23,22 +23,10 @@ pipeline {
                     // Map build parameters to environment variables used by bat steps.
                     env.GCP_PROJECT_ID_EFF = params.GCP_PROJECT_ID.trim()
                     env.TERRAFORM_CMD_EFF = (params.TERRAFORM_CMD?.trim()) ? params.TERRAFORM_CMD.trim() : 'terraform'
-
-                    def providedPath = params.GCLOUD_PATH?.trim()
-                    if (providedPath) {
-                        env.GCLOUD_PATH_EFF = providedPath
-                    } else {
-                        def detectedOutput = bat(
-                            returnStdout: true,
-                            script: '@echo off\r\nfor /f "delims=" %%i in (\'where gcloud.cmd 2^>nul\') do (echo %%i & goto :done)\r\n:done'
-                        ).trim()
-
-                        if (!detectedOutput) {
-                            error('gcloud.cmd not found in PATH. Set GCLOUD_PATH in Build with Parameters to the absolute path of gcloud.cmd.')
-                        }
-
-                        env.GCLOUD_PATH_EFF = detectedOutput.split('\\r?\\n')[0].trim()
+                    if (!params.GCLOUD_PATH?.trim()) {
+                        error('Missing required parameter: GCLOUD_PATH. Set absolute path to gcloud.cmd in Build with Parameters.')
                     }
+                    env.GCLOUD_PATH_EFF = params.GCLOUD_PATH.trim()
                 }
                 bat 'if not exist "%GCLOUD_PATH_EFF%" (echo gcloud not found at %GCLOUD_PATH_EFF% & exit /b 1)'
                 bat '"%GCLOUD_PATH_EFF%" --version'
