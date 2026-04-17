@@ -46,7 +46,9 @@ pipeline {
             steps {
                 bat '"%GCLOUD_PATH_EFF%" auth activate-service-account --key-file="%GCP_SA_KEY%"'
                 bat '"%GCLOUD_PATH_EFF%" config set project "%GCP_PROJECT_ID_EFF%"'
-                bat '"%GCLOUD_PATH_EFF%" auth configure-docker --quiet'
+                bat '"%GCLOUD_PATH_EFF%" auth print-access-token > gcloud_token.txt'
+                bat 'docker login -u oauth2accesstoken --password-stdin https://gcr.io < gcloud_token.txt'
+                bat 'del /q gcloud_token.txt'
                 bat 'docker push "gcr.io/%GCP_PROJECT_ID_EFF%/cloud-app:latest"'
             }
         }
