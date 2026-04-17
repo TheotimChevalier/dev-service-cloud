@@ -24,18 +24,21 @@ pipeline {
                     env.GCP_PROJECT_ID_EFF = params.GCP_PROJECT_ID.trim()
                     env.TERRAFORM_CMD_EFF = (params.TERRAFORM_CMD?.trim()) ? params.TERRAFORM_CMD.trim() : 'terraform'
 
-                    def gcloudCandidates = [
-                        params.GCLOUD_PATH?.trim(),
-                        'C:\\Program Files\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd',
-                        'C:\\Program Files (x86)\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd',
-                        "${env.USERPROFILE}\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd"
-                    ].findAll { it }
+                    def providedPath = params.GCLOUD_PATH?.trim()
+                    if (providedPath) {
+                        env.GCLOUD_PATH_EFF = providedPath
+                    } else {
+                        def detectedOutput = bat(
+                            returnStdout: true,
+                            script: '@echo off\r\nfor /f "delims=" %%i in (\'where gcloud.cmd 2^>nul\') do (echo %%i & goto :done)\r\n:done'
+                        ).trim()
 
-                    def detected = gcloudCandidates.find { new File(it).exists() }
-                    if (!detected) {
-                        error('gcloud.cmd not found. Set GCLOUD_PATH in Build with Parameters to the absolute path of gcloud.cmd.')
+                        if (!detectedOutput) {
+                            error('gcloud.cmd not found in PATH. Set GCLOUD_PATH in Build with Parameters to the absolute path of gcloud.cmd.')
+                        }
+
+                        env.GCLOUD_PATH_EFF = detectedOutput.split('\\r?\\n')[0].trim()
                     }
-                    env.GCLOUD_PATH_EFF = detected
                 }
                 bat 'if not exist "%GCLOUD_PATH_EFF%" (echo gcloud not found at %GCLOUD_PATH_EFF% & exit /b 1)'
                 bat '"%GCLOUD_PATH_EFF%" --version'
