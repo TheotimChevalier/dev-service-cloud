@@ -3,6 +3,8 @@ pipeline {
 
     parameters {
         string(name: 'GCP_PROJECT_ID', defaultValue: 'test-jenkis', description: 'Google Cloud Project ID (ex: my-project-123456)')
+        string(name: 'GCLOUD_PATH', defaultValue: 'C:\\Program Files\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd', description: 'Absolute path to gcloud.cmd on Jenkins agent')
+        string(name: 'TERRAFORM_CMD', defaultValue: 'terraform', description: 'Terraform command or absolute path to terraform.exe')
     }
 
     environment {
@@ -18,6 +20,9 @@ pipeline {
                         error('Missing required parameter: GCP_PROJECT_ID. Set it in Build with Parameters or give a non-empty default value in Jenkinsfile.')
                     }
                 }
+                bat 'if not exist "%GCLOUD_PATH%" (echo gcloud not found at %GCLOUD_PATH% & exit /b 1)'
+                bat '"%GCLOUD_PATH%" --version'
+                bat '%TERRAFORM_CMD% version'
             }
         }
 
@@ -31,9 +36,9 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                bat 'gcloud auth activate-service-account --key-file="%GCP_SA_KEY%"'
-                bat 'gcloud config set project "%GCP_PROJECT_ID%"'
-                bat 'gcloud auth configure-docker --quiet'
+                bat '"%GCLOUD_PATH%" auth activate-service-account --key-file="%GCP_SA_KEY%"'
+                bat '"%GCLOUD_PATH%" config set project "%GCP_PROJECT_ID%"'
+                bat '"%GCLOUD_PATH%" auth configure-docker --quiet'
                 bat 'docker push "gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
             }
         }
@@ -42,8 +47,8 @@ pipeline {
         stage('Terraform Init & Plan') {
             steps {
                 dir('terraform') {
-                    bat 'terraform init'
-                    bat 'terraform plan -var="project_id=%GCP_PROJECT_ID%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
+                    bat '%TERRAFORM_CMD% init'
+                    bat '%TERRAFORM_CMD% plan -var="project_id=%GCP_PROJECT_ID%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
                 }
             }
         }
@@ -51,7 +56,7 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 dir('terraform') {
-                    bat 'terraform apply -auto-approve -var="project_id=%GCP_PROJECT_ID%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
+                    bat '%TERRAFORM_CMD% apply -auto-approve -var="project_id=%GCP_PROJECT_ID%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
                 }
             }
         }
