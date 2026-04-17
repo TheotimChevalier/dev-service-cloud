@@ -8,31 +8,20 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-
         stage('Build Docker Image') {
             steps {
-                script {
-                    def imageName = "gcr.io/${env.GCP_PROJECT_ID}/cloud-app:latest"
-                    env.IMAGE_NAME = imageName
-                    bat "docker build -t ${imageName} ."
-                }
+                bat 'docker version'
+                bat 'docker build --file Dockerfile --tag "gcr.io/%GCP_PROJECT_ID%/cloud-app:latest" "%WORKSPACE%"'
             }
         }
 
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    def imageName = env.IMAGE_NAME ?: "gcr.io/${env.GCP_PROJECT_ID}/cloud-app:latest"
-                    bat "gcloud auth configure-docker"
-                    bat "docker push ${imageName}"
-                }
+                bat 'gcloud auth activate-service-account --key-file="%GCP_SA_KEY%"'
+                bat 'gcloud config set project "%GCP_PROJECT_ID%"'
+                bat 'gcloud auth configure-docker --quiet'
+                bat 'docker push "gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
             }
         }
 
@@ -40,11 +29,8 @@ pipeline {
         stage('Terraform Init & Plan') {
             steps {
                 dir('terraform') {
-                    script {
-                        def imageName = env.IMAGE_NAME ?: "gcr.io/${env.GCP_PROJECT_ID}/cloud-app:latest"
-                        bat "terraform init"
-                        bat "terraform plan -var=\"project_id=${env.GCP_PROJECT_ID}\" -var=\"region=${env.REGION}\" -var=\"image_url=${imageName}\""
-                    }
+                    bat 'terraform init'
+                    bat 'terraform plan -var="project_id=%GCP_PROJECT_ID%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
                 }
             }
         }
@@ -52,10 +38,7 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 dir('terraform') {
-                    script {
-                        def imageName = env.IMAGE_NAME ?: "gcr.io/${env.GCP_PROJECT_ID}/cloud-app:latest"
-                        bat "terraform apply -auto-approve -var=\"project_id=${env.GCP_PROJECT_ID}\" -var=\"region=${env.REGION}\" -var=\"image_url=${imageName}\""
-                    }
+                    bat 'terraform apply -auto-approve -var="project_id=%GCP_PROJECT_ID%" -var="region=%REGION%" -var="image_url=gcr.io/%GCP_PROJECT_ID%/cloud-app:latest"'
                 }
             }
         }
