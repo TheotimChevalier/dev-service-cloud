@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'GCP_PROJECT_ID', defaultValue: '', description: 'Google Cloud Project ID (ex: my-project-123456)')
+        string(name: 'GCP_PROJECT_ID', defaultValue: 'test-jenkis', description: 'Google Cloud Project ID (ex: my-project-123456)')
     }
 
     environment {
