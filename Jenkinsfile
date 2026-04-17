@@ -1,8 +1,11 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'GCP_PROJECT_ID', defaultValue: '', description: 'Google Cloud Project ID (ex: my-project-123456)')
+    }
+
     environment {
-        GCP_PROJECT_ID = credentials('gcp-project-id') // Secret text : ID du projet GCP
         GCP_SA_KEY = credentials('gcp-service-account') // Secret file : clé JSON
         REGION = 'europe-west1'
     }
